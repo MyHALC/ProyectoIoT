@@ -5,9 +5,10 @@ from dotenv import load_dotenv
 from redis import Redis
 
 
-load_dotenv(
-    Path(__file__).resolve().parents[2] / ".env"
-)
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+ENV_FILE = PROJECT_ROOT / ".env"
+
+load_dotenv(ENV_FILE)
 
 
 redis_client = Redis(

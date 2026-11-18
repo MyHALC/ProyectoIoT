@@ -9,9 +9,10 @@ from mongoengine.connection import (
 )
 
 
-BASE_DIR = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+ENV_FILE = PROJECT_ROOT / ".env"
 
-load_dotenv(BASE_DIR / ".env")
+load_dotenv(ENV_FILE)
 
 MONGO_ALIAS = "iot"
 MONGO_COLECCION = "registros_iot"

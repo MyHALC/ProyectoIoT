@@ -7,9 +7,10 @@ from sqlalchemy import URL, create_engine
 from sqlalchemy.orm import sessionmaker
 
 
-BASE_DIR = Path(__file__).resolve().parents[2]
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+ENV_FILE = PROJECT_ROOT / ".env"
 
-load_dotenv(BASE_DIR / ".env")
+load_dotenv(ENV_FILE)
 
 
 @lru_cache(maxsize=1)

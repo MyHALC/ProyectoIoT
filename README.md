@@ -1,6 +1,6 @@
 # ProyectoIoT
 
-Framework modular para dispositivos IoT. Este repositorio contiene el servidor API desarrollado con **FastAPI**, con persistencia en MySQL/MariaDB y MongoDB, y gestión de sesiones mediante Redis.
+Framework modular para dispositivos IoT. Este repositorio contiene el servidor API, con persistencia en MySQL/MariaDB y MongoDB, y gestión de sesiones mediante Redis.
 
 ## Estructura del servidor
 

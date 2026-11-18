@@ -1,6 +1,6 @@
 # Arquitectura del backend
 
-## Capas
+## Capas    
 
 - **routes/**: define endpoints, métodos HTTP, dependencias y modelos de respuesta.
 - **schemas/**: valida los datos de entrada y estructura las respuestas con Pydantic.

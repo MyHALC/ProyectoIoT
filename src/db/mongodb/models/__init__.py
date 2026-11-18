@@ -1,0 +1,1 @@
+from .registro_iot import RegistroIoT

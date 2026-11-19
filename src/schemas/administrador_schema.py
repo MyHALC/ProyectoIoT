@@ -85,6 +85,7 @@ class AdministradorResponse(BaseModel):
     apellido: str
     correo: str
     activo: bool
+    es_master: bool
     fecha_registro: datetime
 
 

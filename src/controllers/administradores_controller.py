@@ -4,7 +4,7 @@ import secrets
 from fastapi import HTTPException
 from pwdlib import PasswordHash
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -52,6 +52,7 @@ class AdministradoresController:
                 Administrador.id_pub,
                 Administrador.usuario,
                 Administrador.activo,
+                Administrador.es_master,
                 Administrador.fecha_registro,
                 AdministradorNombre.nombre,
                 AdministradorNombre.apellido,
@@ -74,10 +75,14 @@ class AdministradoresController:
     # REGISTRAR ADMINISTRADOR
     # ============================
 
+    # ============================
+    # REGISTRAR ADMINISTRADOR
+    # ============================
+
     def crear_administrador(
-        self,
-        datos: AdministradorRegistroRequest,
-        db: Session
+            self,
+            datos: AdministradorRegistroRequest,
+            db: Session
     ) -> AdministradorResponse:
 
         habilitado = os.getenv(
@@ -91,119 +96,182 @@ class AdministradoresController:
                 detail="Registro de administradores deshabilitado"
             )
 
-        # Verificar en la tabla global de correos.
-        existe_correo = db.scalar(
-            select(Correo.id_priv).where(
-                Correo.correo == datos.correo
-            )
-        )
-
-        if existe_correo is not None:
-            raise HTTPException(
-                status_code=409,
-                detail="El correo ya está registrado"
-            )
-
-        existe_usuario = db.scalar(
-            select(Administrador.id_priv).where(
-                Administrador.usuario == datos.usuario
-            )
-        )
-
-        if existe_usuario is not None:
-            raise HTTPException(
-                status_code=409,
-                detail="El nombre de usuario ya está registrado"
-            )
-
+        # Generar hash Argon2id
         hash_guardado = password_hash.hash(
             datos.contrasena
         )
 
-        for _ in range(5):
+        # Bloqueo exclusivo para serializar
+        # los registros de administradores.
+        nombre_bloqueo = "iot2:registro_administradores"
 
-            id_priv = self.generar_id()
-            id_pub = self.generar_id()
+        # El bloqueo utiliza una conexión separada
+        # para conservarlo durante db.commit().
+        with db.get_bind().connect() as conexion_bloqueo:
 
             try:
-                administrador = Administrador(
-                    id_priv=id_priv,
-                    id_pub=id_pub,
-                    usuario=datos.usuario,
-                    activo=1
+                bloqueo = conexion_bloqueo.scalar(
+                    text("SELECT GET_LOCK(:nombre, 10)"),
+                    {"nombre": nombre_bloqueo}
                 )
 
-                db.add(administrador)
-                db.flush()
+            except SQLAlchemyError as error:
+                raise HTTPException(
+                    status_code=503,
+                    detail="No se pudo obtener el bloqueo de registro"
+                ) from error
 
-                db.add_all([
-                    AdministradorNombre(
-                        id_priv=id_priv,
-                        nombre=datos.nombre,
-                        apellido=datos.apellido
-                    ),
-
-                    Correo(
-                        id_priv_usuario=None,
-                        id_priv_admin=id_priv,
-                        correo=datos.correo
-                    ),
-
-                    Contrasena(
-                        id_priv_usuario=None,
-                        id_priv_admin=id_priv,
-                        contrasena=hash_guardado,
-                        contra_cambiada=0,
-                        llave_hmac_cifrada=None
-                    )
-                ])
-
-                db.commit()
-                db.refresh(administrador)
-
-                return AdministradorResponse(
-                    id_pub=administrador.id_pub,
-                    usuario=administrador.usuario,
-                    nombre=datos.nombre,
-                    apellido=datos.apellido,
-                    correo=datos.correo,
-                    activo=bool(administrador.activo),
-                    fecha_registro=administrador.fecha_registro
+            if bloqueo != 1:
+                raise HTTPException(
+                    status_code=503,
+                    detail="El registro está ocupado. Intenta nuevamente."
                 )
 
-            except IntegrityError as error:
+            try:
+                # ============================
+                # VALIDAR CORREO
+                # ============================
 
-                db.rollback()
-
-                correo_ocupado = db.scalar(
+                existe_correo = db.scalar(
                     select(Correo.id_priv).where(
                         Correo.correo == datos.correo
                     )
                 )
 
-                if correo_ocupado is not None:
+                if existe_correo is not None:
                     raise HTTPException(
                         status_code=409,
                         detail="El correo ya está registrado"
-                    ) from error
+                    )
 
-                id_priv_ocupado = (
-                    db.get(Administrador, id_priv) is not None
+                # ============================
+                # VALIDAR NOMBRE DE USUARIO
+                # ============================
+
+                existe_usuario = db.scalar(
+                    select(Administrador.id_priv).where(
+                        Administrador.usuario == datos.usuario
+                    )
                 )
 
-                id_pub_ocupado = db.scalar(
-                    select(Administrador.id_priv).where(
-                        Administrador.id_pub == id_pub
+                if existe_usuario is not None:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="El nombre de usuario ya está registrado"
                     )
-                ) is not None
 
-                if id_priv_ocupado or id_pub_ocupado:
-                    continue
+                # ============================
+                # DETERMINAR ADMINISTRADOR MASTER
+                # ============================
+
+                existe_admin = db.scalar(
+                    select(Administrador.id_priv).limit(1)
+                )
+
+                # Si no hay administradores: master.
+                # Si ya existe alguno: normal.
+                es_master = 1 if existe_admin is None else 0
+
+                # ============================
+                # REGISTRAR ADMINISTRADOR
+                # ============================
+
+                for _ in range(5):
+
+                    id_priv = self.generar_id()
+                    id_pub = self.generar_id()
+
+                    try:
+                        administrador = Administrador(
+                            id_priv=id_priv,
+                            id_pub=id_pub,
+                            usuario=datos.usuario,
+                            activo=1,
+                            es_master=es_master
+                        )
+
+                        db.add(administrador)
+                        db.flush()
+
+                        db.add_all([
+                            AdministradorNombre(
+                                id_priv=id_priv,
+                                nombre=datos.nombre,
+                                apellido=datos.apellido
+                            ),
+
+                            Correo(
+                                id_priv_usuario=None,
+                                id_priv_admin=id_priv,
+                                correo=datos.correo
+                            ),
+
+                            Contrasena(
+                                id_priv_usuario=None,
+                                id_priv_admin=id_priv,
+                                contrasena=hash_guardado,
+                                contra_cambiada=0,
+                                llave_hmac_cifrada=None
+                            )
+                        ])
+
+                        # Guardar todas las tablas
+                        # en una sola transacción.
+                        db.commit()
+                        db.refresh(administrador)
+
+                        return AdministradorResponse(
+                            id_pub=administrador.id_pub,
+                            usuario=administrador.usuario,
+                            nombre=datos.nombre,
+                            apellido=datos.apellido,
+                            correo=datos.correo,
+                            activo=bool(administrador.activo),
+                            es_master=bool(administrador.es_master),
+                            fecha_registro=administrador.fecha_registro
+                        )
+
+                    except IntegrityError as error:
+
+                        db.rollback()
+
+                        # Comprobar correo duplicado
+                        correo_ocupado = db.scalar(
+                            select(Correo.id_priv).where(
+                                Correo.correo == datos.correo
+                            )
+                        )
+
+                        if correo_ocupado is not None:
+                            raise HTTPException(
+                                status_code=409,
+                                detail="El correo ya está registrado"
+                            ) from error
+
+                        # Comprobar colisiones de ID
+                        id_priv_ocupado = (
+                                db.get(Administrador, id_priv)
+                                is not None
+                        )
+
+                        id_pub_ocupado = db.scalar(
+                            select(Administrador.id_priv).where(
+                                Administrador.id_pub == id_pub
+                            )
+                        ) is not None
+
+                        if id_priv_ocupado or id_pub_ocupado:
+                            continue
+
+                        raise HTTPException(
+                            status_code=409,
+                            detail="Conflicto al registrar el administrador"
+                        ) from error
 
                 raise HTTPException(
-                    status_code=409,
-                    detail="Conflicto al registrar el administrador"
-                ) from error
+                    status_code=500,
+                    detail="No se pudieron asignar identificadores únicos"
+                )
 
             except SQLAlchemyError as error:
 
@@ -214,10 +282,19 @@ class AdministradoresController:
                     detail="No se pudo guardar el administrador"
                 ) from error
 
-        raise HTTPException(
-            status_code=500,
-            detail="No se pudieron asignar identificadores únicos"
-        )
+            finally:
+                # Liberar el bloqueo, tanto si
+                # el registro fue exitoso como si falló.
+                try:
+                    conexion_bloqueo.scalar(
+                        text("SELECT RELEASE_LOCK(:nombre)"),
+                        {"nombre": nombre_bloqueo}
+                    )
+
+                except SQLAlchemyError:
+                    # Evitar reutilizar una conexión que
+                    # pudiera conservar el bloqueo.
+                    conexion_bloqueo.invalidate()
 
 
     def validar_administrador(
@@ -276,6 +353,7 @@ class AdministradoresController:
             apellido=fila["apellido"],
             correo=fila["correo"],
             activo=bool(fila["activo"]),
+            es_master=bool(fila["es_master"]),
             fecha_registro=fila["fecha_registro"]
         )
 

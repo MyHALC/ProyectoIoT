@@ -38,3 +38,8 @@ class Administrador(Base):
         nullable=False,
         server_default=text("CURRENT_TIMESTAMP")
     )
+    es_master: Mapped[int] = mapped_column(
+        TINYINT(1),
+        nullable=False,
+        server_default=text("0")
+    )

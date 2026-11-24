@@ -1,0 +1,124 @@
+{% extends "componentes/base.html" %}
+
+{% block titulo %}
+Usuario | Sistema IoT
+{% endblock %}
+
+{% block contenido %}
+    <section class="welcome">
+        <div>
+            <span class="eyebrow">PANEL DE CONTROL</span>
+            <h2>Bienvenido, Usuario</h2>
+            <p>
+                En este apartado podras hacer el monitoreo de Alarmas, Dispositivos, etc
+            </p>
+        </div>
+    </section>
+
+    <section class="section" id="monitoreo">
+        <div class="section-heading">
+            <div>
+                <h2>Estado del sistema</h2>
+                <p>Indicadores de demostración</p>
+            </div>
+        </div>
+
+        <div class="stats-grid">
+            <article class="stat-card">
+                <span class="stat-icon green">▣</span>
+                <p>Dispositivos registrados</p>
+                <strong>12</strong>
+                <small>Inventario de demostración</small>
+            </article>
+
+            <article class="stat-card">
+                <span class="stat-icon blue">◉</span>
+                <p>Dispositivos activos</p>
+                <strong>08</strong>
+                <small>Estado de demostración</small>
+            </article>
+
+            <article class="stat-card">
+                <span class="stat-icon orange">⚠</span>
+                <p>Alertas pendientes</p>
+                <strong>03</strong>
+                <small>Alertas de ejemplo</small>
+            </article>
+
+            <article class="stat-card">
+                <span class="stat-icon purple">♙</span>
+                <p>Cuentas registradas</p>
+                <strong>15</strong>
+                <small>Usuarios y administradores</small>
+            </article>
+        </div>
+    </section>
+
+    <section class="content-grid">
+
+        <article class="panel-card" id="alertas">
+            <div class="section-heading">
+                <div>
+                    <h2>Alertas recientes</h2>
+                    <p>Eventos de ejemplo</p>
+                </div>
+                <a href="#alertas">Ver todas</a>
+            </div>
+
+            <div class="alert-item">
+                <span class="alert-indicator danger"></span>
+                <div>
+                    <strong>Temperatura elevada</strong>
+                    <p>Zona de monitoreo Norte · 38 °C</p>
+                </div>
+                <span class="tag danger-tag">Alta</span>
+            </div>
+
+            <div class="alert-item">
+                <span class="alert-indicator warning"></span>
+                <div>
+                    <strong>Humedad baja</strong>
+                    <p>Zona de monitoreo Centro · 24 %</p>
+                </div>
+                <span class="tag warning-tag">Media</span>
+            </div>
+
+            <div class="alert-item">
+                <span class="alert-indicator danger"></span>
+                <div>
+                    <strong>Dispositivo sin conexión</strong>
+                    <p>Dispositivo FW-008</p>
+                </div>
+                <span class="tag danger-tag">Alta</span>
+            </div>
+        </article>
+
+        <article class="panel-card" id="dispositivos">
+            <div class="section-heading">
+                <div>
+                    <h2>Dispositivos</h2>
+                    <p>Resumen de conectividad</p>
+                </div>
+                <a href="#dispositivos">Consultar</a>
+            </div>
+
+            <div class="device-summary">
+                <div class="device-number">
+                    <strong>08</strong>
+                    <span>Activos</span>
+                </div>
+                <div class="device-number">
+                    <strong>04</strong>
+                    <span>Inactivos</span>
+                </div>
+            </div>
+
+            <div class="progress-track">
+                <div class="progress-value"></div>
+            </div>
+            <small class="muted">67 % de dispositivos activos (ejemplo)</small>
+        </article>
+
+    </section>
+
+{% endblock %}

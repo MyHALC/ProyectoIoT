@@ -1,0 +1,89 @@
+
+<!DOCTYPE html>
+<html lang="es" style="background-color: thistle">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema IoT - Iniciar sesión</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+<body>
+
+    <div class="login-container">
+
+      <div id="vistaLogin">
+
+        <h1 id="tituloFormulario">Iniciar sesión</h1>
+
+        <form id="loginForm">
+
+            <label for="usuario">Usuario:</label>
+            <input
+                type="text"
+                id="usuario"
+                name="usuario"
+                autocomplete="username"
+                required
+            >
+
+            <label for="contraseña">Contraseña:</label>
+            <input
+                type="password"
+                id="contraseña"
+                name="contraseña"
+                autocomplete="current-password"
+                required
+            >
+
+            <button type="submit">Iniciar sesión</button>
+
+        </form>
+
+      </div>
+
+      <div id="vistaCambio" style="display: none">
+
+        <h1>Cambia tu contraseña</h1>
+        <p>Es tu primer acceso: escribe una contraseña nueva (8 a 128 caracteres, distinta de la provisional).</p>
+
+        <form id="cambioForm">
+
+            <label for="camNueva">Contraseña nueva:</label>
+            <input type="password" id="camNueva" autocomplete="new-password"
+                   minlength="8" maxlength="128" required>
+
+            <label for="camConfirmar">Confirmar contraseña:</label>
+            <input type="password" id="camConfirmar" autocomplete="new-password"
+                   minlength="8" maxlength="128" required>
+
+            <button type="submit">Guardar contraseña</button>
+            <button type="button" id="cancelarCambio">Cancelar</button>
+
+        </form>
+
+      </div>
+
+    </div>
+
+    <!-- Modal de mensajes -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+
+            <div id="icono" class="icono"></div>
+
+            <div id="mensaje" class="mensaje"></div>
+
+            <button type="button" id="cerrarModal" class="cerrar">
+                Aceptar
+            </button>
+
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+
+</body>
+</html>

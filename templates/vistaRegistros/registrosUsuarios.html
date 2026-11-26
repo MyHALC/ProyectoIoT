@@ -1,0 +1,204 @@
+{% extends "componentes/base.html" %}
+
+{% block titulo %}
+Usuarios | Sistema IoT
+{% endblock %}
+
+{% block contenido %}
+    <section class="welcome">
+        <div>
+            <span class="eyebrow">GESTIÓN DE USUARIOS</span>
+            <h2>Administración de cuentas de usuarios</h2>
+            <p>
+                Registra y consulta las cuentas de las personas
+                autorizadas para acceder al monitoreo de incendios
+                forestales.
+            </p>
+        </div>
+    </section>
+
+    <section class="stats-grid admin-stats">
+
+        <article class="stat-card">
+            <p>Total de usuarios</p>
+            <strong id="totalUsuarios"></strong>
+            <small>Cuentas registradas</small>
+        </article>
+
+        <article class="stat-card">
+            <p>Cuentas activas</p>
+            <strong id="totalActivos"></strong>
+            <small>Con acceso habilitado</small>
+        </article>
+
+        <article class="stat-card">
+            <p>Pendientes de verificación</p>
+            <strong id="totalPendientes"></strong>
+            <small>Correo sin verificar</small>
+        </article>
+
+        <article class="stat-card">
+            <p>Cuentas desactivadas</p>
+            <strong id="totalInactivos"></strong>
+            <small>Sin acceso al sistema</small>
+        </article>
+
+    </section>
+
+    <section class="panel-card management-panel">
+
+        <div class="management-header">
+            <div>
+                <h2>Usuarios registrados</h2>
+                <p>Consulta y administra las cuentas existentes.</p>
+            </div>
+
+            <button class="primary-button" id="abrirFormulario">
+                Registrar usuario
+            </button>
+        </div>
+
+        <div class="table-tools">
+            <input
+                type="search"
+                id="buscarUsuario"
+                placeholder="Buscar por nombre, correo o usuario..."
+            >
+        </div>
+
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Nombre completo</th>
+                        <th>Usuario</th>
+                        <th>Correo electrónico</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tablaUsuarios">
+                </tbody>
+            </table>
+        </div>
+
+    </section>
+
+    <!-- Formulario de registro -->
+
+    <div class="form-overlay" id="modalRegistro">
+        <section class="form-modal">
+
+            <div class="management-header">
+                <div>
+                    <h2>Registrar usuario</h2>
+                    <p>Completa los datos de la nueva cuenta.</p>
+                </div>
+
+                <button
+                    type="button"
+                    class="close-form"
+                    id="cerrarFormulario"
+                >
+                    ×
+                </button>
+            </div>
+
+            <form id="formUsuario">
+
+                <label for="nombreCompleto">Nombre completo</label>
+                <input
+                    type="text"
+                    id="nombreCompleto"
+                    placeholder="Nombre y apellidos"
+                    required
+                >
+
+                <label for="correo">Correo electrónico</label>
+                <input
+                    type="email"
+                    id="correo"
+                    placeholder="ejemplo@correo.com"
+                    required
+                >
+
+                <label for="nombreUsuario">Nombre de usuario</label>
+                <input
+                    type="text"
+                    id="nombreUsuario"
+                    placeholder="usuario"
+                    required
+                >
+
+                <label for="contrasenaProvisional">
+                    Contraseña provisional
+                </label>
+
+                <div class="password-row">
+                    <input
+                        type="text"
+                        id="contrasenaProvisional"
+                        readonly
+                        required
+                    >
+
+                    <button
+                        type="button"
+                        class="secondary-button"
+                        id="generarContrasena"
+                    >
+                        Generar otra
+                    </button>
+                </div>
+
+                <button
+                    type="button"
+                    class="copy-password"
+                    id="copiarContrasena"
+                >
+                    Copiar contraseña
+                </button>
+
+                <div class="verification-info">
+                    Entrega esta contraseña provisional al usuario.
+                    La cuenta se crea en estado Pendiente; actívala
+                    desde la tabla para que pueda iniciar sesión.
+                </div>
+
+                <div class="form-actions">
+                    <button
+                        type="button"
+                        class="secondary-button"
+                        id="cancelarFormulario"
+                    >
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="primary-button">
+                        Registrar
+                    </button>
+                </div>
+
+            </form>
+
+        </section>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+    window.GESTION = {
+        rol: "usuario",
+        tabla: "tablaUsuarios",
+        total: "totalUsuarios",
+        buscar: "buscarUsuario",
+        formulario: "formUsuario"
+    };
+</script>
+
+<script src="{{ url_for('static', filename='js/cuentas.js') }}"></script>
+
+{% endblock %}

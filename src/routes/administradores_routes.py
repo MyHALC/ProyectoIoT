@@ -29,10 +29,7 @@ from db.redis.session_repository import (
 
 router = APIRouter()
 
-
-# ============================
 # REGISTRO
-# ============================
 
 @router.post(
     "/registro/",
@@ -47,14 +44,7 @@ def crear_administrador(
         datos, db
     )
 
-
-# ============================
-# LOGIN
-# ============================
-
-# ============================
 # LOGIN DE ADMINISTRADOR
-# ============================
 
 @router.post(
     "/login/",
@@ -84,10 +74,7 @@ def validar_administrador(
 
     return resultado
 
-
-# ============================
 # CONSULTAR POR CORREO
-# ============================
 
 @router.get(
     "/por-correo",
@@ -104,10 +91,7 @@ def consultar_administrador(
         datos, db
     )
 
-
-# ============================
 # LISTAR ADMINISTRADORES
-# ============================
 
 @router.get(
     "/",

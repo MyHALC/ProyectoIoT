@@ -1,0 +1,162 @@
+{% extends "componentes/base.html" %}
+
+{% block titulo %}
+Registro Dispositivos | Sistema IoT
+{% endblock %}
+
+{% block contenido %}
+    <section class="welcome">
+        <div>
+            <span class="eyebrow">GESTIÓN DE DISPOSITIVOS</span>
+            <h2>Inventario del sistema IoT</h2>
+            <p>
+                Consulta y administra los dispositivos asociados
+                a las zonas de monitoreo de incendios forestales.
+            </p>
+        </div>
+    </section>
+
+    <section class="stats-grid admin-stats">
+
+        <article class="stat-card">
+            <p>Total de dispositivos</p>
+            <strong id="totalDispositivos"></strong>
+            <small>Dispositivos registrados</small>
+        </article>
+
+        <article class="stat-card">
+            <p>Dispositivos activos</p>
+            <strong id="totalActivos"></strong>
+            <small>Con estado habilitado</small>
+        </article>
+
+        <article class="stat-card">
+            <p>Dispositivos inactivos</p>
+            <strong id="totalInactivos"></strong>
+            <small>Con estado deshabilitado</small>
+        </article>
+
+        <article class="stat-card">
+            <p>Zonas monitoreadas</p>
+            <strong id="totalZonas"></strong>
+            <small>Zonas distintas registradas</small>
+        </article>
+
+    </section>
+
+    <section class="panel-card management-panel">
+
+        <div class="management-header">
+            <div>
+                <h2>Dispositivos registrados</h2>
+                <p>Consulta el inventario y administra su estado.</p>
+            </div>
+
+            <button class="primary-button" id="abrirFormulario">
+                Registrar dispositivo
+            </button>
+        </div>
+
+        <div class="table-tools">
+            <input
+                type="search"
+                id="buscarDispositivo"
+                placeholder="Buscar por identificador o zona..."
+            >
+        </div>
+
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Identificador</th>
+                        <th>Zona de monitoreo</th>
+                        <th>Descripción</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tablaDispositivos">
+                </tbody>
+            </table>
+        </div>
+
+    </section>
+
+    <!-- Formulario de registro -->
+
+    <div class="form-overlay" id="modalRegistro">
+        <section class="form-modal">
+
+            <div class="management-header">
+                <div>
+                    <h2>Registrar dispositivo</h2>
+                    <p>Introduce la información del dispositivo.</p>
+                </div>
+
+                <button type="button" class="close-form"
+                        id="cerrarFormulario">
+                    ×
+                </button>
+            </div>
+
+            <form id="formDispositivo">
+
+                <label for="identificador">Identificador del dispositivo</label>
+                <input
+                    type="text"
+                    id="identificador"
+                    placeholder="Ej. DISP-004"
+                    required
+                >
+
+                <label for="zona">Zona de monitoreo</label>
+                <input
+                    type="text"
+                    id="zona"
+                    placeholder="Ej. Norte"
+                    required
+                >
+
+                <label for="descripcion">Descripción</label>
+                <input
+                    type="text"
+                    id="descripcion"
+                    placeholder="Descripción general del dispositivo"
+                    required
+                >
+
+                <div class="form-actions">
+                    <button type="button" class="secondary-button"
+                            id="cancelarFormulario">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="primary-button">
+                        Registrar
+                    </button>
+                </div>
+
+            </form>
+
+        </section>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+    window.GESTION = {
+        rol: "dispositivo",
+        tabla: "tablaDispositivos",
+        total: "totalDispositivos",
+        buscar: "buscarDispositivo",
+        formulario: "formDispositivo"
+    };
+</script>
+
+<script src="{{ url_for('static', filename='js/dispositivos.js') }}"></script>
+
+{% endblock %}

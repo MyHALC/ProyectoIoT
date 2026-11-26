@@ -1,0 +1,49 @@
+
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{% block titulo %}Sistema IoT{% endblock %}</title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/dashboard.css') }}">
+
+    {% block estilos %}{% endblock %}
+</head>
+
+<body class="dashboard">
+
+    {% include "componentes/sidebar.html" %}
+
+    <main class="main-content">
+
+        {% block contenido %}
+        {% endblock %}
+
+    </main>
+
+    <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+
+    <script>
+    async function cerrarSesion() {
+        try {
+            await fetch("/api/salir", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({})
+            });
+        } finally {
+            window.location.href = "/";
+        }
+    }
+</script>
+
+    {% block scripts %}{% endblock %}
+
+</body>
+</html>

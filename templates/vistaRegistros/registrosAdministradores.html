@@ -1,0 +1,178 @@
+{% extends "componentes/base.html" %}
+
+{% block titulo %}
+Administrador MASTER | Sistema IoT
+{% endblock %}
+
+{% block contenido %}
+    <section class="welcome">
+        <div>
+            <span class="eyebrow">GESTIÓN DE Administradores</span>
+            <h2>Administración de cuentas</h2>
+            <p>
+                Registra y consulta las cuentas de los administradores
+                autorizados para gestionar el sistema de monitoreo.
+            </p>
+        </div>
+    </section>
+
+    <section class="stats-grid admin-stats">
+
+        <article class="stat-card">
+            <p>Total de administradores</p>
+            <strong id="totalAdministradores"></strong>
+            <small>Cuentas registradas</small>
+        </article>
+
+        <article class="stat-card">
+            <p>Cuentas activas</p>
+            <strong id="totalActivos"></strong>
+            <small>Con acceso habilitado</small>
+        </article>
+
+        <article class="stat-card">
+            <p>Pendientes de verificación</p>
+            <strong id="totalPendientes"></strong>
+            <small>Correo sin verificar</small>
+        </article>
+
+        <article class="stat-card">
+            <p>Cuentas desactivadas</p>
+            <strong id="totalInactivos"></strong>
+            <small>Sin acceso al sistema</small>
+        </article>
+
+    </section>
+
+    <section class="panel-card management-panel">
+
+        <div class="management-header">
+            <div>
+                <h2>Administradores registrados</h2>
+                <p>Consulta y administra las cuentas existentes.</p>
+            </div>
+
+            <button class="primary-button" id="abrirFormulario">
+                Registrar administrador
+            </button>
+        </div>
+
+        <div class="table-tools">
+            <input
+                type="search"
+                id="buscarAdministrador"
+                placeholder="Buscar por nombre, correo o usuario..."
+            >
+        </div>
+
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Nombre completo</th>
+                        <th>Usuario</th>
+                        <th>Correo electrónico</th>
+                        <th>Estado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+
+                <tbody id="tablaAdministradores">
+                </tbody>
+            </table>
+        </div>
+
+    </section>
+
+    <!-- Formulario de registro -->
+
+    <div class="form-overlay" id="modalRegistro">
+        <section class="form-modal">
+
+            <div class="management-header">
+                <div>
+                    <h2>Registrar administrador</h2>
+                    <p>Completa los datos de la nueva cuenta.</p>
+                </div>
+
+                <button type="button" class="close-form"
+                        id="cerrarFormulario">
+                    ×
+                </button>
+            </div>
+
+            <form id="formAdministrador">
+
+                <label for="nombreCompleto">Nombre completo</label>
+                <input type="text" id="nombreCompleto"
+                       placeholder="Nombre y apellidos" required>
+
+                <label for="correo">Correo electrónico</label>
+                <input type="email" id="correo"
+                       placeholder="ejemplo@correo.com" required>
+
+                <label for="nombreUsuario">Nombre de usuario</label>
+                <input type="text" id="nombreUsuario"
+                       placeholder="usuario_admin" required>
+
+                <label for="contrasenaProvisional">Contraseña provisional</label>
+                <div class="password-row">
+                    <input
+                        type="text"
+                        id="contrasenaProvisional"
+                        readonly
+                        required
+                    >
+
+                    <button
+                        type="button"
+                        class="secondary-button"
+                        id="generarContrasena"
+                    >
+                        Generar otra
+                    </button>
+                </div>
+
+                <button
+                    type="button"
+                    class="copy-password"
+                    id="copiarContrasena"
+                >
+                    Copiar contraseña
+                </button>
+
+
+
+                <div class="form-actions">
+                    <button type="button" class="secondary-button"
+                            id="cancelarFormulario">
+                        Cancelar
+                    </button>
+
+                    <button type="submit" class="primary-button">
+                        Registrar
+                    </button>
+                </div>
+
+            </form>
+
+        </section>
+    </div>
+
+{% endblock %}
+
+{% block scripts %}
+
+<script>
+    window.GESTION = {
+        rol: "administrador",
+        tabla: "tablaAdministradores",
+        total: "totalAdministradores",
+        buscar: "buscarAdministrador",
+        formulario: "formAdministrador"
+    };
+</script>
+
+<script src="{{ url_for('static', filename='js/cuentas.js') }}"></script>
+
+{% endblock %}

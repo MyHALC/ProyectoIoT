@@ -1,0 +1,142 @@
+<aside class="sidebar">
+
+    <div class="brand">
+        <strong>Sistema IoT</strong>
+    </div>
+
+    <div class="profile">
+
+        <div class="avatar">
+            {% if cuenta_sesion %}
+                {{ cuenta_sesion.nombre_completo[0] | upper }}
+            {% else %}
+                U
+            {% endif %}
+        </div>
+
+        <div>
+            {% if cuenta_sesion %}
+                <strong>{{ cuenta_sesion.nombre_completo }}</strong>
+
+                {% if cuenta_sesion.rol == "master" %}
+                    <small>Administrador master</small>
+                {% elif cuenta_sesion.rol == "administrador" %}
+                    <small>Administrador</small>
+                {% elif cuenta_sesion.rol == "usuario" %}
+                    <small>Usuario</small>
+                {% endif %}
+            {% endif %}
+        </div>
+
+    </div>
+
+    <nav class="navigation">
+        <span class="nav-label">PRINCIPAL</span>
+
+        {% if cuenta_sesion.rol == "master" %}
+
+            <a class="nav-link"
+               href="{{ url_for('panel_maestro') }}">
+                ▦ Resumen general
+            </a>
+
+            <a class="nav-link"
+               href="{{ url_for('panel_maestro') }}">
+                 ◉ Monitoreo
+            </a>
+
+            <a class="nav-link"
+               href="{{ url_for('panel_maestro') }}">
+                 ⚠ Alertas
+            </a>
+
+        {% elif cuenta_sesion.rol == "administrador" %}
+
+            <a class="nav-link"
+               href="{{ url_for('panel_administrador') }}">
+                ▦ Resumen general
+            </a>
+
+            <a class="nav-link"
+               href="{{ url_for('panel_maestro') }}">
+                 ◉ Monitoreo
+            </a>
+
+            <a class="nav-link"
+               href="{{ url_for('panel_maestro') }}">
+                 ⚠ Alertas
+            </a>
+
+        {% elif cuenta_sesion.rol == "usuario" %}
+
+            <a class="nav-link"
+               href="{{ url_for('panel_usuario') }}">
+                ▦ Mi panel
+            </a>
+
+            <a class="nav-link"
+               href="{{ url_for('panel_maestro') }}">
+                 ◉ Monitoreo
+            </a>
+
+            <a class="nav-link"
+               href="{{ url_for('panel_maestro') }}">
+                 ⚠ Alertas
+            </a>
+
+        {% endif %}
+
+
+        <!-- REGISTRO -->
+        {% if cuenta_sesion.rol in ["master", "administrador"] %}
+
+            <span class="nav-label">REGISTRO</span>
+
+            {% if cuenta_sesion.rol == "master" %}
+
+                <a class="nav-link"
+                   href="{{ url_for('gestion_administradores') }}">
+                    ♙ Administradores
+                </a>
+
+                <a class="nav-link"
+                   href="{{ url_for('gestion_usuarios') }}">
+                    ♧ Usuarios
+                </a>
+
+                <a class="nav-link"
+                   href="{{ url_for('gestion_dispositivos') }}">
+                    ▣ Dispositivos
+                </a>
+
+            {% endif %}
+
+            {% if cuenta_sesion.rol == "administrador" %}
+
+                <a class="nav-link"
+                   href="{{ url_for('administracion_usuarios') }}">
+                    ♧ Usuarios
+                </a>
+
+                <a class="nav-link"
+                   href="{{ url_for('administracion_dispositivos') }}">
+                    ▣ Dispositivos
+                </a>
+
+            {% else %}
+
+            {% endif %}
+
+        {% endif %}
+
+        <span class="nav-label">SISTEMA</span>
+            <a class="nav-link" href="/master/configuracion">Configuración</a>
+
+    </nav>
+
+    <!-- CERRAR SESIÓN -->
+    <button class="logout" onclick="cerrarSesion()">
+        ↪ Cerrar sesión
+    </button>
+
+</aside>

@@ -19,6 +19,8 @@ CREATE TABLE IF NOT EXISTS cuentas (
     contra_cambiada  TINYINT(1)   NOT NULL DEFAULT 0,
     -- 'pendiente' al registrar; solo 'activo' puede iniciar sesión.
     estado           ENUM('activo', 'pendiente', 'inactivo') NOT NULL DEFAULT 'pendiente',
+    -- Nombre del archivo de la foto de perfil (static/uploads/perfiles/). NULL = sin foto.
+    foto             VARCHAR(64)  NULL,
     creado_por       INT UNSIGNED NULL,
     fecha_registro   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (id),

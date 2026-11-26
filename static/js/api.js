@@ -4,6 +4,9 @@ async function api(url, { metodo = "GET", cuerpo } = {}) {
     const config = { method: metodo, credentials: "same-origin", headers: {} };
 
     if (cuerpo !== undefined) {
+        config.headers["X-Requested-With"] = "XMLHttpRequest";
+        config.body = cuerpo;
+    } else if (cuerpo !== undefined) {
         config.headers["Content-Type"] = "application/json";
         config.body = JSON.stringify(cuerpo);
     }

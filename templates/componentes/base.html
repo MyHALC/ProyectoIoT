@@ -10,6 +10,8 @@
 
     <link rel="stylesheet"
           href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='css/password-toggle.css') }}">
 
     {% block estilos %}{% endblock %}
 </head>
@@ -26,6 +28,7 @@
     </main>
 
     <script src="{{ url_for('static', filename='js/api.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/passwordToggle.js') }}"></script>
 
     <script>
     async function cerrarSesion() {

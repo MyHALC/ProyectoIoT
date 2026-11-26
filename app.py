@@ -22,10 +22,32 @@ app.config.update(
     SESSION_COOKIE_HTTPONLY=True,
     SESSION_COOKIE_SAMESITE="Lax",
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=30),
+    # Tope de cualquier petición (la foto de perfil pesa como máximo 2 MB).
+        MAX_CONTENT_LENGTH=3 * 1024 * 1024,
 )
 
 app.teardown_appcontext(db.cerrar)
 app.register_blueprint(api)
+
+def revisar_esquema():
+    """Avisa si la base es anterior al perfil (falta la columna `foto`)."""
+    try:
+        conexion = db.conectar()
+    except pymysql.err.Error:
+        return  # sin base de datos; el error claro sale en la primera petición
+    try:
+        with conexion.cursor() as cur:
+            cur.execute("SHOW COLUMNS FROM cuentas LIKE 'foto'")
+            if cur.fetchone() is None:
+                print("AVISO: falta la columna `foto` en la tabla cuentas. Ejecuta "
+                      "bd/migraciones/02_perfil.sql (ver README) o el perfil dará error.")
+    except pymysql.err.Error:
+        pass
+    finally:
+        conexion.close()
+
+
+revisar_esquema()
 
 @app.context_processor
 def inyectar_cuenta():
@@ -106,6 +128,11 @@ def administracion_dispositivos():
 @pagina("usuario")
 def panel_usuario():
     return render_template("/vistaResumenGeneral/usuario.html")
+
+@app.route("/perfil")
+@pagina("master", "administrador", "usuario")
+def perfil():
+    return render_template("vistaPerfil/perfil.html")
 
 
 if __name__ == "__main__":

@@ -7,7 +7,10 @@
     <div class="profile">
 
         <div class="avatar">
-            {% if cuenta_sesion %}
+            {% if cuenta_sesion and cuenta_sesion.foto %}
+                <img src="{{ url_for('static', filename='uploads/perfiles/' ~ cuenta_sesion.foto) }}"
+                     alt="">
+            {% elif cuenta_sesion %}
                 {{ cuenta_sesion.nombre_completo[0] | upper }}
             {% else %}
                 U
@@ -129,9 +132,11 @@
 
         {% endif %}
 
-        <span class="nav-label">SISTEMA</span>
-            <a class="nav-link" href="/master/configuracion">Configuración</a>
-
+       <span class="nav-label">SISTEMA</span>
+            <a class="nav-link {% if request.endpoint == 'perfil' %}active{% endif %}"
+               href="{{ url_for('perfil') }}">
+                ☺ Mi perfil
+            </a>
     </nav>
 
     <!-- CERRAR SESIÓN -->

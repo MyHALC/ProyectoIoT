@@ -1,4 +1,4 @@
-"""API JSON del frontend: login, cuentas (usuarios/administradores) y dispositivos.
+"""API JSON del frontend: login, perfil, cuentas (usuarios/administradores) y dispositivos.
 
 Todas las consultas a MySQL son parametrizadas. Las rutas protegidas vuelven a leer
 la cuenta en la base en cada petición, así que desactivar una cuenta le quita el
@@ -9,9 +9,10 @@ import secrets
 import time
 from collections import defaultdict, deque
 from functools import wraps
+from pathlib import Path
 
 import pymysql
-from flask import Blueprint, g, jsonify, request, session
+from flask import Blueprint, g, jsonify, request, session, url_for
 
 import db
 import seguridad
@@ -31,6 +32,13 @@ MAX_INTENTOS = 5
 VENTANA_SEGUNDOS = 300
 _intentos = defaultdict(deque)
 
+ROLES = ("master", "administrador", "usuario")
+
+# Foto de perfil: se guarda en disco con un nombre aleatorio; en la base solo va el nombre.
+CARPETA_FOTOS = Path(__file__).with_name("static") / "uploads" / "perfiles"
+MAX_FOTO = 2 * 1024 * 1024
+PATRON_NOMBRE_FOTO = re.compile(r"^[0-9a-f]{32}\.(png|jpg|webp)$")
+
 
 class Invalido(ValueError):
     """Datos mal formados (400)."""
@@ -38,6 +46,10 @@ class Invalido(ValueError):
 
 class Prohibido(Exception):
     """El rol de la cuenta no permite la operación (403)."""
+
+
+class Bloqueado(Exception):
+    """Demasiados intentos fallidos seguidos (429)."""
 
 
 def error(codigo, detalle):
@@ -54,19 +66,39 @@ def _prohibido(e):
     return error(403, str(e) or "No tienes permiso para esta operación.")
 
 
+@api.errorhandler(Bloqueado)
+def _bloqueado_error(e):
+    return error(429, "Demasiados intentos. Espera unos minutos.")
+
+
 @api.errorhandler(pymysql.err.OperationalError)
 def _sin_base_de_datos(e):
     return error(503, "La base de datos no está disponible. Revisa que Docker esté en ejecución.")
+
+
+@api.errorhandler(413)
+def _demasiado_grande(e):
+    return error(413, "La imagen no debe pasar de 2 MB.")
 
 
 @api.before_request
 def exigir_json():
     # Un formulario de otro sitio no puede enviar application/json sin permiso previo (CORS).
     if request.method in ("POST", "PATCH", "PUT", "DELETE") and not request.is_json:
+        # Única excepción: la subida de la foto (multipart). Ahí se exige un encabezado
+        # propio, que tampoco puede enviar un formulario de otro sitio sin permiso (CORS).
+        if (request.endpoint == "api.subir_foto"
+                and request.mimetype == "multipart/form-data"
+                and request.headers.get("X-Requested-With") == "XMLHttpRequest"):
+            return None
+        # Quitar la foto no necesita cuerpo. Un DELETE tampoco puede enviarlo un formulario
+        # de otro sitio: exige permiso previo (CORS), y la cookie es SameSite=Lax.
+        if request.method == "DELETE" and request.endpoint == "api.quitar_foto":
+            return None
         return error(415, "El contenido debe enviarse como JSON.")
 
 
-# ---------------------------------------------------------------- utilidades
+#utilidades
 
 def cuerpo():
     datos = request.get_json(silent=True)
@@ -103,6 +135,13 @@ def cuenta_publica(f):
     }
 
 
+def foto_url(nombre):
+    """Dirección pública de la foto, o None si la cuenta no tiene."""
+    if not nombre:
+        return None
+    return url_for("static", filename=f"uploads/perfiles/{nombre}")
+
+
 def dispositivo_publico(f):
     return {
         "id": f["id"],
@@ -126,7 +165,7 @@ def consultar_uno(sql, parametros=()):
         return cur.fetchone()
 
 
-# ------------------------------------------------------------ sesión y roles
+#sesión y roles
 
 def cuenta_actual():
     """Cuenta de la sesión, leída de la base. None si no hay sesión o ya no está activa."""
@@ -134,7 +173,7 @@ def cuenta_actual():
     if not isinstance(id_cuenta, int) or session.get("solo_cambio_contrasena"):
         return None
     fila = consultar(
-        "SELECT id, rol, nombre_completo, usuario, correo, estado "
+        "SELECT id, rol, nombre_completo, usuario, correo, estado, foto "
         "FROM cuentas WHERE id = %s", (id_cuenta,))
     if not fila or fila[0]["estado"] != "activo":
         session.clear()
@@ -166,7 +205,7 @@ def _rol_gestionable(rol):
     return rol
 
 
-# ---------------------------------------------------------------------- login
+#login
 
 def _bloqueado(clave):
     ahora = time.monotonic()
@@ -265,7 +304,149 @@ def salir():
     return jsonify({"estado": "exito"})
 
 
-# --------------------------------------------------------------------- cuentas
+#perfil
+
+def _perfil_publico(id_cuenta):
+    fila = consultar_uno(
+        "SELECT id, rol, nombre_completo, usuario, correo, estado, foto, fecha_registro "
+        "FROM cuentas WHERE id = %s", (id_cuenta,))
+    perfil = cuenta_publica(fila)
+    perfil["foto_url"] = foto_url(fila["foto"])
+    return perfil
+
+
+def _verificar_contrasena_actual(datos):
+    """Pide la contraseña actual antes de un cambio delicado; 5 fallos bloquean unos minutos."""
+    actual = datos.get("contrasena_actual")
+    if not isinstance(actual, str) or not actual:
+        raise Invalido("Escribe tu contraseña actual.")
+    clave = ("perfil", g.cuenta["id"])
+    if _bloqueado(clave):
+        raise Bloqueado()
+    fila = consultar_uno("SELECT contrasena_hash FROM cuentas WHERE id = %s", (g.cuenta["id"],))
+    if not seguridad.verificar(actual[:128], fila["contrasena_hash"]):
+        _registrar_fallo(clave)
+        # 400 y no 401: el frontend trata un 401 como "sesión terminada".
+        raise Invalido("La contraseña actual no es correcta.")
+    _intentos.pop(clave, None)
+    return actual
+
+
+def _extension_imagen(contenido):
+    """Tipo real según los primeros bytes; no se confía en el nombre ni en el Content-Type."""
+    if contenido.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if contenido.startswith(b"\xff\xd8\xff"):
+        return "jpg"
+    if contenido[:4] == b"RIFF" and contenido[8:12] == b"WEBP":
+        return "webp"
+    return None
+
+
+def _borrar_foto(nombre):
+    if nombre and PATRON_NOMBRE_FOTO.match(nombre):
+        (CARPETA_FOTOS / nombre).unlink(missing_ok=True)
+
+
+@api.get("/perfil")
+@requiere(*ROLES)
+def consultar_perfil():
+    return jsonify(_perfil_publico(g.cuenta["id"]))
+
+
+@api.patch("/perfil")
+@requiere(*ROLES)
+def actualizar_perfil():
+    """Cambia el nombre de usuario (con la contraseña actual como confirmación)."""
+    datos = cuerpo()
+    usuario = texto(datos, "usuario", "El nombre de usuario", 30, 3)
+    if not PATRON_USUARIO.match(usuario):
+        raise Invalido("El usuario solo admite letras, números, punto, guion y guion bajo.")
+
+    _verificar_contrasena_actual(datos)
+    if usuario == g.cuenta["usuario"]:
+        raise Invalido("Ese ya es tu nombre de usuario.")
+    if consultar("SELECT id FROM cuentas WHERE usuario = %s AND id <> %s",
+                 (usuario, g.cuenta["id"])):
+        return error(409, "Ese nombre de usuario ya está registrado.")
+
+    conexion = db.obtener()
+    try:
+        with conexion.cursor() as cur:
+            cur.execute("UPDATE cuentas SET usuario = %s WHERE id = %s",
+                        (usuario, g.cuenta["id"]))
+        conexion.commit()
+    except pymysql.err.IntegrityError:
+        conexion.rollback()
+        return error(409, "Ese nombre de usuario ya está registrado.")
+    return jsonify(_perfil_publico(g.cuenta["id"]))
+
+
+@api.post("/perfil/contrasena")
+@requiere(*ROLES)
+def cambiar_contrasena_perfil():
+    """Cambio voluntario de contraseña (distinto del cambio obligatorio del primer acceso)."""
+    datos = cuerpo()
+    nueva = datos.get("contrasena_nueva")
+    if not isinstance(nueva, str) or not 8 <= len(nueva) <= 128:
+        raise Invalido("La contraseña nueva debe tener entre 8 y 128 caracteres.")
+
+    actual = _verificar_contrasena_actual(datos)
+    if nueva == actual:
+        raise Invalido("La contraseña nueva debe ser distinta de la actual.")
+
+    conexion = db.obtener()
+    with conexion.cursor() as cur:
+        cur.execute("UPDATE cuentas SET contrasena_hash = %s, contra_cambiada = 1 WHERE id = %s",
+                    (seguridad.hashear(nueva), g.cuenta["id"]))
+    conexion.commit()
+    return jsonify({"estado": "exito"})
+
+
+@api.post("/perfil/foto")
+@requiere(*ROLES)
+def subir_foto():
+    archivo = request.files.get("foto")
+    if archivo is None:
+        raise Invalido("Elige una imagen.")
+    contenido = archivo.read(MAX_FOTO + 1)
+    if not contenido:
+        raise Invalido("El archivo está vacío.")
+    if len(contenido) > MAX_FOTO:
+        raise Invalido("La imagen no debe pasar de 2 MB.")
+    extension = _extension_imagen(contenido)
+    if extension is None:
+        raise Invalido("Usa una imagen JPG, PNG o WebP.")
+
+    nombre = f"{secrets.token_hex(16)}.{extension}"
+    CARPETA_FOTOS.mkdir(parents=True, exist_ok=True)
+    (CARPETA_FOTOS / nombre).write_bytes(contenido)
+
+    conexion = db.obtener()
+    try:
+        with conexion.cursor() as cur:
+            cur.execute("UPDATE cuentas SET foto = %s WHERE id = %s", (nombre, g.cuenta["id"]))
+        conexion.commit()
+    except Exception:
+        conexion.rollback()
+        _borrar_foto(nombre)
+        raise
+    _borrar_foto(g.cuenta["foto"])
+    return jsonify({"foto_url": foto_url(nombre)})
+
+
+@api.delete("/perfil/foto")
+@requiere(*ROLES)
+def quitar_foto():
+    conexion = db.obtener()
+    with conexion.cursor() as cur:
+        cur.execute("UPDATE cuentas SET foto = NULL WHERE id = %s", (g.cuenta["id"],))
+    conexion.commit()
+    _borrar_foto(g.cuenta["foto"])
+    return jsonify({"foto_url": None})
+
+
+#cuentas
 
 @api.get("/cuentas")
 @requiere("master", "administrador")
@@ -350,7 +531,7 @@ def cambiar_estado_cuenta(id_cuenta):
     return jsonify({"id": id_cuenta, "estado": estado})
 
 
-# ---------------------------------------------------------------- dispositivos
+#dispositivos
 
 @api.get("/dispositivos")
 @requiere("master", "administrador")

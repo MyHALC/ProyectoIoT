@@ -1,0 +1,140 @@
+{% extends "componentes/base.html" %}
+
+{% block titulo %}
+Mi perfil | Sistema IoT
+{% endblock %}
+
+{% block contenido %}
+    <section class="welcome">
+        <div>
+            <span class="eyebrow">MI CUENTA</span>
+            <h2>Mi perfil</h2>
+            <p>
+                Cambia tu foto, tu nombre de usuario y tu contraseña.
+                Los cambios se aplican en cuanto los guardas.
+            </p>
+        </div>
+    </section>
+
+    <section class="profile-grid">
+
+        <!-- Identidad: foto y datos generales -->
+        <article class="panel-card profile-identity">
+
+            <div class="profile-photo" id="fotoGrande" aria-label="Foto de perfil"></div>
+
+            <div class="profile-photo-actions">
+                <button type="button" class="primary-button" id="botonFoto">
+                    Cambiar foto
+                </button>
+                <button type="button" class="secondary-button" id="botonQuitarFoto" hidden>
+                    Quitar foto
+                </button>
+            </div>
+
+            <input type="file" id="inputFoto" hidden
+                   accept="image/png,image/jpeg,image/webp">
+
+            <p class="profile-hint">JPG, PNG o WebP de hasta 2 MB.</p>
+            <p class="profile-message" id="mensajeFoto" role="status"></p>
+
+            <h3 class="profile-name" id="perfilNombre"></h3>
+            <p class="profile-role" id="perfilRol"></p>
+            <span class="status-badge" id="perfilEstado"></span>
+
+            <dl class="profile-facts">
+                <div>
+                    <dt>Correo electrónico</dt>
+                    <dd id="perfilCorreo"></dd>
+                </div>
+                <div>
+                    <dt>Cuenta creada el</dt>
+                    <dd id="perfilFecha"></dd>
+                </div>
+            </dl>
+
+        </article>
+
+        <div class="profile-stack">
+
+            <!-- Datos de la cuenta -->
+            <article class="panel-card">
+                <div class="section-heading">
+                    <div>
+                        <h2>Datos de la cuenta</h2>
+                        <p>Tu nombre y tu correo no se pueden editar desde aquí.</p>
+                    </div>
+                </div>
+
+                <form class="profile-form" id="formUsuario" novalidate>
+
+                    <label for="perfilNombreCompleto">Nombre completo</label>
+                    <input type="text" id="perfilNombreCompleto" readonly>
+
+                    <label for="perfilCorreoInput">Correo electrónico</label>
+                    <input type="email" id="perfilCorreoInput" readonly>
+
+                    <label for="perfilUsuario">Nombre de usuario</label>
+                    <input type="text" id="perfilUsuario" autocomplete="username"
+                           minlength="3" maxlength="30" required>
+                    <p class="field-hint">
+                        De 3 a 30 caracteres: letras, números, punto, guion y guion bajo.
+                    </p>
+
+                    <label for="usuarioContrasena">Contraseña actual</label>
+                    <input type="password" id="usuarioContrasena"
+                           autocomplete="current-password" maxlength="128" required>
+                    <p class="field-hint">
+                        La pedimos para confirmar que eres tú quien cambia el usuario.
+                    </p>
+
+                    <div class="form-actions">
+                        <button type="submit" class="primary-button">
+                            Guardar usuario
+                        </button>
+                    </div>
+
+                    <p class="profile-message" id="mensajeUsuario" role="status"></p>
+                </form>
+            </article>
+
+            <!-- Contraseña -->
+            <article class="panel-card">
+                <div class="section-heading">
+                    <div>
+                        <h2>Cambiar contraseña</h2>
+                        <p>Usa una contraseña de 8 a 128 caracteres que no uses en otros sitios.</p>
+                    </div>
+                </div>
+
+                <form class="profile-form" id="formContrasena" novalidate>
+
+                    <label for="contrasenaActual">Contraseña actual</label>
+                    <input type="password" id="contrasenaActual"
+                           autocomplete="current-password" maxlength="128" required>
+
+                    <label for="contrasenaNueva">Contraseña nueva</label>
+                    <input type="password" id="contrasenaNueva"
+                           autocomplete="new-password" minlength="8" maxlength="128" required>
+
+                    <label for="contrasenaConfirmar">Confirmar contraseña nueva</label>
+                    <input type="password" id="contrasenaConfirmar"
+                           autocomplete="new-password" minlength="8" maxlength="128" required>
+
+                    <div class="form-actions">
+                        <button type="submit" class="primary-button">
+                            Cambiar contraseña
+                        </button>
+                    </div>
+
+                    <p class="profile-message" id="mensajeContrasena" role="status"></p>
+                </form>
+            </article>
+
+        </div>
+    </section>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/perfil.js') }}"></script>
+{% endblock %}
